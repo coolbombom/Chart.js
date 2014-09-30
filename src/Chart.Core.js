@@ -1403,13 +1403,22 @@
 		initialize : function(){
 			this.fit();
 		},
-		buildYLabels : function(){
-			this.yLabels = [];
+		buildCalculatedLabels : function() {
+			this.calculatedLabels = [];
 
 			var stepDecimalPlaces = getDecimalPlaces(this.stepValue);
 
 			for (var i=0; i<=this.steps; i++){
-				this.yLabels.push(template(this.templateString,{value:(this.min + (i * this.stepValue)).toFixed(stepDecimalPlaces)}));
+				this.calculatedLabels.push(template(this.templateString,{value:(this.min + (i * this.stepValue)).toFixed(stepDecimalPlaces)}));
+			}
+		},
+		buildYLabels : function(){
+			this.buildCalculatedLabels();
+			if(this.invertXY) {
+				this.yLabels = this.xLabels;
+				this.xLabels = this.calculatedLabels;
+			} else {
+				this.yLabels = this.calculatedLabels;
 			}
 			this.yLabelWidth = (this.display && this.showLabels) ? longestText(this.ctx,this.font,this.yLabels) : 0;
 		},
@@ -1535,10 +1544,13 @@
 			return this.endPoint - (scalingFactor * (value - this.min));
 		},
 		calculateX : function(index){
+			var how = this.valuesCount;
+			if(this.invertXY)
+				how = this.steps; 
 			var isRotated = (this.xLabelRotation > 0),
 				// innerWidth = (this.offsetGridLines) ? this.width - offsetLeft - this.padding : this.width - (offsetLeft + halfLabelWidth * 2) - this.padding,
 				innerWidth = this.width - (this.xScalePaddingLeft + this.xScalePaddingRight),
-				valueWidth = innerWidth/(this.valuesCount - ((this.offsetGridLines) ? 0 : 1)),
+				valueWidth = innerWidth/(how - ((this.offsetGridLines) ? 0 : 1)),
 				valueOffset = (valueWidth * index) + this.xScalePaddingLeft;
 
 			if (this.offsetGridLines){
@@ -1553,7 +1565,7 @@
 		},
 		draw : function(){
 			var ctx = this.ctx,
-				yLabelGap = (this.endPoint - this.startPoint) / this.steps,
+				yLabelGap = (this.endPoint - this.startPoint) / (this.invertXY ? this.yLabels.length : this.steps),
 				xStart = Math.round(this.xScalePaddingLeft);
 			if (this.display){
 				ctx.fillStyle = this.textColor;
@@ -1561,6 +1573,8 @@
 				each(this.yLabels,function(labelString,index){
 					var yLabelCenter = this.endPoint - (yLabelGap * index),
 						linePositionY = Math.round(yLabelCenter);
+					if(this.invertXY)
+						yLabelCenter -= yLabelGap / 2;
 
 					ctx.textAlign = "right";
 					ctx.textBaseline = "middle";
@@ -1596,7 +1610,8 @@
 				},this);
 
 				each(this.xLabels,function(label,index){
-					var xPos = this.calculateX(index) + aliasPixel(this.lineWidth),
+					var width = this.calculateX(1) - this.calculateX(0);
+					var xPos = this.calculateX(index) + aliasPixel(this.lineWidth) - (this.invertXY ? width / 2 : 0),
 						// Check to see if line/bar here and decide where to place the line
 						linePos = this.calculateX(index - (this.offsetGridLines ? 0.5 : 0)) + aliasPixel(this.lineWidth),
 						isRotated = (this.xLabelRotation > 0);
