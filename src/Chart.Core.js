@@ -1239,6 +1239,44 @@
 		}
 	});
 
+	Chart.HorizontalRectangle = Chart.Element.extend({
+		draw : function(){
+			var ctx = this.ctx,
+				halfHeight = this.height/2,
+				top = this.y - halfHeight,
+				bottom = this.y + halfHeight,
+				right = this.left - (this.left - this.x),
+				halfStroke = this.strokeWidth / 2;
+
+			// Canvas doesn't allow us to stroke inside the width so we can
+			// adjust the sizes to fit if we're setting a stroke on the line
+			if (this.showStroke){
+				top += halfStroke;
+				bottom -= halfStroke;
+				right += halfStroke;
+			}
+
+			ctx.beginPath();
+
+			ctx.fillStyle = this.fillColor;
+			ctx.strokeStyle = this.strokeColor;
+			ctx.lineWidth = this.strokeWidth;
+
+			// It'd be nice to keep this class totally generic to any rectangle
+			// and simply specify which border to miss out.
+			ctx.moveTo(this.left, bottom);
+			ctx.lineTo(this.left, top);
+			ctx.lineTo(right, top);
+			ctx.lineTo(right, bottom);
+			ctx.fill();
+			if (this.showStroke){
+				ctx.stroke();
+			}
+		},
+		inRange : function(chartX,chartY){
+			return (chartY >= this.y - this.height/2 && chartY <= this.y + this.height/2) && (chartX >= this.left && chartX <= this.right);
+		}
+	});
 	Chart.Tooltip = Chart.Element.extend({
 		draw : function(){
 
