@@ -66,13 +66,15 @@
 				},
 				
 				calculateBaseHeight : function(){
-					return ((this.startPoint - this.endPoint) / (this.yLabels.length))
-				;// - (2*options.barValueSpacing);
+					if(this.invertXY)
+						return ((this.endPoint - this.startPoint) / this.yLabels.length) - (2*options.barValueSpacing);
+					else
+						return ((this.startPoint - this.endPoint) / (this.yLabels.length)) + (2*options.barValueSpacing);
 				},
 				calculateBarHeight : function(datasetCount){
 					//The padding between datasets is to the right of each bar, providing that there are more than 1 dataset
 					var baseHeight = this.calculateBaseHeight() - ((datasetCount - 1) * options.barDatasetSpacing);
-				
+
 					return (baseHeight / datasetCount);
 				},
 				
@@ -91,10 +93,10 @@
 				calculateBarY : function(datasetCount, datasetIndex, barIndex){
 					//Reusable method for calculating the yPosition of a given bar based on datasetIndex & height of the bar
 					var yHeight = this.calculateBaseHeight(),
-						yAbsolute = this.endPoint + this.calculateYInvertXY(barIndex + 1) - (yHeight / 2),
+						yAbsolute = this.endPoint + this.calculateYInvertXY(barIndex) - (yHeight / 2),
 						barHeight = this.calculateBarHeight(datasetCount);
 				
-					return yAbsolute + (barHeight * (datasetIndex - 1)) + (datasetIndex * options.barDatasetSpacing) + barHeight/2;
+					return yAbsolute + (barHeight * (datasetIndex - 1)) - (datasetIndex * options.barDatasetSpacing) + barHeight/2;
 				}
 			});
 
