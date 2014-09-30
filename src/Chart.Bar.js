@@ -63,6 +63,38 @@
 					var baseWidth = this.calculateBaseWidth() - ((datasetCount - 1) * options.barDatasetSpacing);
 
 					return (baseWidth / datasetCount);
+				},
+				
+				calculateBaseHeight : function(){
+					return ((this.startPoint - this.endPoint) / (this.yLabels.length))
+				;// - (2*options.barValueSpacing);
+				},
+				calculateBarHeight : function(datasetCount){
+					//The padding between datasets is to the right of each bar, providing that there are more than 1 dataset
+					var baseHeight = this.calculateBaseHeight() - ((datasetCount - 1) * options.barDatasetSpacing);
+				
+					return (baseHeight / datasetCount);
+				},
+				
+				calculateXInvertXY : function(value) {
+					var scalingFactor = (this.width - Math.round(this.xScalePaddingLeft) - this.xScalePaddingRight) / (this.max - this.min);
+					return Math.round(this.xScalePaddingLeft) + (scalingFactor * (value - this.min));
+				
+					var scalingFactor = this.drawingArea() / (this.min - this.max);
+					return this.endPoint - (scalingFactor * (value - this.min));
+				},
+				
+				calculateYInvertXY : function(index){
+					return index * ((this.startPoint - this.endPoint) / (this.yLabels.length));
+				},
+				
+				calculateBarY : function(datasetCount, datasetIndex, barIndex){
+					//Reusable method for calculating the yPosition of a given bar based on datasetIndex & height of the bar
+					var yHeight = this.calculateBaseHeight(),
+						yAbsolute = this.endPoint + this.calculateYInvertXY(barIndex + 1) - (yHeight / 2),
+						barHeight = this.calculateBarHeight(datasetCount);
+				
+					return yAbsolute + (barHeight * (datasetIndex - 1)) + (datasetIndex * options.barDatasetSpacing) + barHeight/2;
 				}
 			});
 
@@ -85,7 +117,8 @@
 			}
 
 			//Declare the extension of the default point, to cater for the options passed in to the constructor
-			this.BarClass = Chart.Rectangle.extend({
+			var cls = this.options.invertXY ?  Chart.HorizontalRectangle : Chart.Rectangle;
+			this.BarClass = cls.extend({
 				strokeWidth : this.options.barStrokeWidth,
 				showStroke : this.options.barShowStroke,
 				ctx : this.chart.ctx
@@ -120,14 +153,27 @@
 
 			this.buildScale(data.labels);
 
+			if(this.options.invertXY) {
+				this.BarClass.prototype.left = Math.round(this.scale.xScalePaddingLeft);
+			} else {
 			this.BarClass.prototype.base = this.scale.endPoint;
+			}
 
 			this.eachBars(function(bar, index, datasetIndex){
-				helpers.extend(bar, {
+				if(this.options.invertXY) {
+			    	var obj = {
+						x: Math.round(this.scale.xScalePaddingLeft),
+						y : this.scale.calculateBarY(this.datasets.length, datasetIndex, index),
+						height : this.scale.calculateBarHeight(this.datasets.length)
+					};
+				} else {
+					var obj = {
 					width : this.scale.calculateBarWidth(this.datasets.length),
 					x: this.scale.calculateBarX(this.datasets.length, datasetIndex, index),
 					y: this.scale.endPoint
-				});
+					};
+				}
+				helpers.extend(bar, obj);
 				bar.save();
 			}, this);
 
@@ -277,13 +323,23 @@
 			helpers.each(this.datasets,function(dataset,datasetIndex){
 				helpers.each(dataset.bars,function(bar,index){
 					if (bar.hasValue()){
-						bar.base = this.scale.endPoint;
+						if(this.options.invertXY) {
+							bar.left = Math.round(this.scale.xScalePaddingLeft);
+							var obj = {
+								x : this.scale.calculateXInvertXY(bar.value),
+								y : this.scale.calculateBarY(this.datasets.length, datasetIndex, index),
+								width : this.scale.calculateBarHeight(this.datasets.length)
+							};
+						} else {
+							bar.base = this.scale.endPoint;
+							var obj = {
+								x : this.scale.calculateBarX(this.datasets.length, datasetIndex, index),
+								y : this.scale.calculateY(bar.value),
+								height : this.scale.calculateBarWidth(this.datasets.length)
+							};
+						}
 						//Transition then draw
-						bar.transition({
-							x : this.scale.calculateBarX(this.datasets.length, datasetIndex, index),
-							y : this.scale.calculateY(bar.value),
-							width : this.scale.calculateBarWidth(this.datasets.length)
-						}, easingDecimal).draw();
+						bar.transition(obj, easingDecimal).draw();
 					}
 				},this);
 
