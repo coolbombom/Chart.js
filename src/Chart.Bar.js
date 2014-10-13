@@ -93,10 +93,10 @@
 				calculateBarY : function(datasetCount, datasetIndex, barIndex){
 					//Reusable method for calculating the yPosition of a given bar based on datasetIndex & height of the bar
 					var yHeight = this.calculateBaseHeight(),
-						yAbsolute = this.endPoint + this.calculateYInvertXY(barIndex) - (yHeight / 2),
+						yAbsolute = (this.endPoint + this.calculateYInvertXY(barIndex) - (yHeight / 2)) - (yHeight / 8),
 						barHeight = this.calculateBarHeight(datasetCount);
-				
-					return yAbsolute + (barHeight * (datasetIndex - 1)) - (datasetIndex * options.barDatasetSpacing) + barHeight/2;
+					if (datasetCount > 1) yAbsolute = yAbsolute + (barHeight * (datasetIndex - 1)) - (datasetIndex * options.barDatasetSpacing) + barHeight/2;
+					return yAbsolute;
 				}
 			});
 
