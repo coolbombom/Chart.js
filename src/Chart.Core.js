@@ -1274,7 +1274,7 @@
 			}
 		},
 		inRange : function(chartX,chartY){
-			return (chartY >= this.y - this.height/2 && chartY <= this.y + this.height/2) && (chartX >= this.left && chartX <= this.right);
+			return (chartY >= this.y - this.height/2 && chartY <= this.y + this.height/2) && (chartX >= this.left && chartX <= this.x);
 		}
 	});
 	Chart.Tooltip = Chart.Element.extend({
@@ -1497,7 +1497,7 @@
 			 *
 			 */
 			this.calculateYRange(cachedHeight);
-
+			var tmp_xLabels = this.xLabels;
 			// With these properties set we can now build the array of yLabels
 			// and also the width of the largest yLabel
 			this.buildYLabels();
@@ -1509,6 +1509,7 @@
 				cachedYLabelWidth = this.yLabelWidth;
 
 				this.calculateYRange(cachedHeight);
+				this.xLabels = tmp_xLabels;
 				this.buildYLabels();
 
 				// Only go through the xLabel loop again if the yLabel width has changed
